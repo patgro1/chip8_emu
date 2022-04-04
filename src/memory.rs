@@ -10,7 +10,7 @@ pub struct Memory {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-enum MemError {
+pub enum MemError {
     OutOfBound,
 }
 

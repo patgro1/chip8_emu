@@ -1,6 +1,17 @@
 use std::env;
 use std::fs;
 
+mod memory;
+
+struct Registers {
+    vx: [u8; 16],
+    mem_reg: u16,  // NOTE: This is the I register but I wanted a better name here
+}
+
+struct Timers {
+    sound: u8,
+    delay: u8
+}
 
 struct Config {
     rom_filename: String
@@ -25,5 +36,9 @@ fn main() {
         },
         Ok(val) => val
     };
+    let m = memory::Memory::new();
+    match m.load_rom(&content) {
+        Err => prinln!("There was an error loading the ROM")
+    }
     println!("{:?}", content)
 }
