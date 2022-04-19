@@ -53,6 +53,12 @@ impl Memory {
        // TODO
     }
 
+    pub fn inspect_mem(self, start_addr:usize, end_addr:usize) {
+        for (offset, val) in self.mem[start_addr..end_addr].iter().enumerate() {
+            println!("0x{:X}: 0x{:X}", start_addr+offset, val);
+        }
+    }
+
     pub fn load_rom(&mut self, data: &Vec<u8>) -> Result<(), MemError> {
         if data.len() > MEM_SIZE-ROM_START {
             return Err(MemError::OutOfBound)
