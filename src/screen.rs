@@ -5,8 +5,14 @@ use sdl2::rect::Rect;
 
 const BASE_WIDTH: u32 = 64;
 const BASE_HEIGHT: u32 = 32;
+pub const BUFFER_SIZE: usize = BASE_WIDTH as usize * BASE_HEIGHT as usize;
 const COLOR_BG: Color = Color::RGB(0, 0, 0);
 const COLOR_FG: Color = Color::RGB(255, 255, 255);
+
+enum PixelColors {
+    ColorBg,
+    ColorFg,
+}
 /// A chip-8 screen is implemented here. The screen is created with a resolution of 800x600.
 /// However, due to higher screen resolution and bigger screen, we can apply a scaling factor to
 /// get a bigger display than usual. Each pixel should be scaled properly.
@@ -37,17 +43,33 @@ impl Screen {
         self.canvas.clear();
     }
 
-    pub fn show(&mut self) {
+    fn show(&mut self) {
         self.canvas.present();
     }
 
-    pub fn draw_pixel(&mut self, x: i32, y: i32) {
-        let pixel = Rect::new(x*self.scale_factor as i32,
-                              y*self.scale_factor as i32,
+    fn draw_pixel(&mut self, x: u32, y: u32, color: PixelColors) {
+        let pixel = Rect::new(x as i32 * self.scale_factor as i32,
+                              y as i32 *self.scale_factor as i32,
                               self.scale_factor, self.scale_factor);
-        self.canvas.set_draw_color(COLOR_FG);
+        match color {
+            PixelColors::ColorBg => self.canvas.set_draw_color(COLOR_BG),
+            PixelColors::ColorFg => self.canvas.set_draw_color(COLOR_FG)
+        }
         self.canvas.fill_rect(pixel).unwrap();
     }
 
-
+    pub fn draw(&mut self, &buffer: &[u8; BUFFER_SIZE]) {
+        for y in 0..BASE_HEIGHT{
+            for x in 0..BASE_WIDTH {
+                let index: usize = y as usize * BASE_WIDTH as usize + x as usize;
+                let pixel_color = if buffer[index] == 1 {
+                    PixelColors::ColorFg
+                } else {
+                    PixelColors::ColorBg
+                };
+                self.draw_pixel(x, y, pixel_color);
+            }
+        }
+        self.show()
+    }
 }
