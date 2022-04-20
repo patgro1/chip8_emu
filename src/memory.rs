@@ -38,8 +38,8 @@ pub enum MemError {
 impl Memory {
     pub fn new() -> Memory {
         let mut mem = [0; MEM_SIZE];
-        let pc: u16 = 0;
-        // Setting the font from address 0x50
+        let pc: u16 = ROM_START.try_into().unwrap();
+        // Setting the font from address 0x50in
         for (idx, val) in FONTS.iter().enumerate() {
             mem[idx + FONT_START] = *val;
         }
@@ -49,8 +49,10 @@ impl Memory {
         }
     }
 
-    pub fn increment_pc() {
-       // TODO
+    pub fn increment_pc(&mut self) {
+        self.pc = self.pc+1;
+        // TODO: Handle wrap around
+
     }
 
     pub fn inspect_mem(self, start_addr:usize, end_addr:usize) {
@@ -69,6 +71,23 @@ impl Memory {
             self.mem[0x200 + idx] = *current_data;
         }
         return Ok(())
+    }
+
+    pub fn fetch_instruction(&mut self) -> u16 {
+        let valh: u16 = self.mem[self.pc as usize].into();
+        self.increment_pc();
+        let vall: u16 = self.mem[self.pc as usize].into();
+        self.increment_pc();
+        valh << 8 | vall
+    }
+
+    pub fn fetch_byte(&self, addr: u16) -> u8 {
+        // println!("Fetching byte at addr= 0x{:4X}", addr);
+        self.mem[addr as usize]
+    }
+
+    pub fn jump(&mut self, addr: u16) {
+        self.pc = addr;
     }
 }
 
