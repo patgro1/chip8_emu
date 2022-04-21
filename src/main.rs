@@ -1,6 +1,9 @@
 use std::{env, fs};
 
 use std::{thread, time};
+use sdl2::{Sdl, EventPump};
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
 
 mod chip8;
 mod memory;
@@ -31,7 +34,8 @@ fn main() {
         },
         Ok(val) => val
     };
-    let screen: screen::Screen = screen::Screen::new(20);
+    let sdl_context:Sdl = sdl2::init().unwrap();
+    let screen: screen::Screen = screen::Screen::new(&sdl_context, 20);
     let mut cpu = chip8::Chip8::new(screen);
     match cpu.load_rom(&content) {
         Err(v) => match v {
@@ -42,18 +46,23 @@ fn main() {
         }
         _ => println!("{:X?}", content)
     }
-    // For now, we will execute a fix amount of instructions
-    let max_instructions = 25;
+
+    // Setting the main loop
+    let mut event_pump: EventPump = sdl_context.event_pump().unwrap();
 
     // Main loop
     cpu.reset();
-    cpu.run(max_instructions);
 
-    // let mut screen = screen::Screen::new(20);
-    // screen.reset();
-    // screen.draw_pixel(0,0);
-    // screen.draw_pixel(2,0);
-    // screen.show();
-    let five_seconds = time::Duration::from_secs(10);
-    thread::sleep(five_seconds);
+    'main_loop: loop {
+        cpu.tick();
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit {..} |
+                    Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                        break 'main_loop
+                    },
+                _ => {}
+            }
+        }
+    }
 }

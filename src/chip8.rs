@@ -1,9 +1,12 @@
+use std::{thread, time};
 use num_enum::TryFromPrimitive;
 
 use crate::memory::Memory;
 use crate::memory::ROM_START;
 use crate::memory::MemError;
 use crate::traits::{ScreenDisplay, BUFFER_SIZE};
+
+const CPU_SLEEP_TIME_BETWEEN_INSTRUCTION: time::Duration = time::Duration::from_micros(1428);
 
 
 #[derive(TryFromPrimitive)]
@@ -26,7 +29,8 @@ pub struct Chip8<T: ScreenDisplay> {
     pc: u16,
     mem: Memory,
     display: T,
-    display_buffer: [u8; BUFFER_SIZE]
+    display_buffer: [u8; BUFFER_SIZE],
+    running: bool
 }
 
 impl<T: ScreenDisplay> Chip8<T> {
@@ -39,8 +43,9 @@ impl<T: ScreenDisplay> Chip8<T> {
             pc: 0,
             display: display,
             mem: Memory::new(),
-            display_buffer: [0; BUFFER_SIZE]}
-
+            display_buffer: [0; BUFFER_SIZE],
+            running: false
+        }
     }
 
     pub fn reset(&mut self) {
@@ -55,41 +60,47 @@ impl<T: ScreenDisplay> Chip8<T> {
         self.mem.load_rom(data)
     }
 
-    pub fn run(&mut self, instruction_cnt: u32) {
-        let mut current_instr_cnt = 0;
-        while current_instr_cnt < instruction_cnt {
-            let instruction: u16 = self.fetch_next_instruction();
-            self.pc += 2;
-            println!("instruction: 0x{:4X}", instruction);
-            let op_code: OpCode = OpCode::try_from(instruction >> 12).unwrap();
-            let nibbles: [u16; 3] = [(instruction&0x0F00) >> 8,
-                                    (instruction&0x00F0) >> 4,
-                                    instruction&0x000F];
-            println!("Instruction: {:?} with nibbles {:?}", op_code, nibbles);
-            match op_code {
-                OpCode::ClearScreen=> {
-                    self.display_buffer = [0; BUFFER_SIZE];
-                    self.display.draw(self.display_buffer);
-                },
-                OpCode::Jump => self.pc = instruction & 0x0FFF,
-                OpCode::SetVx => {
-                    self.vx[nibbles[0] as usize] = (nibbles[1] as u8) <<4 | nibbles[2] as u8;
-                    println!("new vx = {:?}", self.vx);
-                },
-                OpCode::AddVx => {
-                    self.vx[nibbles[0] as usize] += (nibbles[1] as u8) <<4 | nibbles[2] as u8;
-                    println!("new vx = {:?}", self.vx);
-                    // TODO: manage flags
-                },
-                OpCode::SetI => self.mem_reg = instruction & 0x0FFF,
-                OpCode::Draw => {
-                    println!("TODO: recalculate the buffer");
-                    self.calculate_display_buffer(nibbles[0] as u8, nibbles[1] as u8, nibbles[2] as u8);
-                    self.display.draw(self.display_buffer);
-                }
+    pub fn tick(&mut self) {
+        let instruction: u16 = self.fetch_next_instruction();
+        self.pc += 2;
+        // println!("instruction: 0x{:4X}", instruction);
+        let op_code: OpCode = match OpCode::try_from(instruction >> 12) {
+            Ok(op_code) => op_code,
+            Err(message) => {
+                println!("{}", message);
+                return;
             }
-            current_instr_cnt += 1;
+        };
+        let nibbles: [u16; 3] = [(instruction&0x0F00) >> 8,
+                                (instruction&0x00F0) >> 4,
+                                instruction&0x000F];
+        // println!("Instruction: {:?} with nibbles {:?}", op_code, nibbles);
+        match op_code {
+            OpCode::ClearScreen=> {
+                self.display_buffer = [0; BUFFER_SIZE];
+                self.display.draw(self.display_buffer);
+            },
+            OpCode::Jump => self.pc = instruction & 0x0FFF,
+            OpCode::SetVx => {
+                self.vx[nibbles[0] as usize] = (nibbles[1] as u8) <<4 | nibbles[2] as u8;
+                println!("new vx = {:?}", self.vx);
+            },
+            OpCode::AddVx => {
+                let val_to_add = (nibbles[1] as u16) << 4 | nibbles[2] as u16;
+                let vx: u16 = self.vx[nibbles[0] as usize].into();
+                let sum: u16 = vx + val_to_add;
+                self.vx[nibbles[0] as usize] = (sum & 0xFF) as u8;
+                println!("new vx = {:?}", self.vx);
+                // TODO: manage flags
+            },
+            OpCode::SetI => self.mem_reg = instruction & 0x0FFF,
+            OpCode::Draw => {
+                println!("TODO: recalculate the buffer");
+                self.calculate_display_buffer(nibbles[0] as u8, nibbles[1] as u8, nibbles[2] as u8);
+                self.display.draw(self.display_buffer);
+            }
         }
+        thread::sleep(CPU_SLEEP_TIME_BETWEEN_INSTRUCTION);
     }
 
     fn fetch_next_instruction(&mut self) -> u16{

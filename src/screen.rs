@@ -26,8 +26,7 @@ impl Screen {
     /// # Arguments
     /// * `scale_factor` - A unsigned integer specifying the scaling factor to apply to the screen
     /// ```
-    pub fn new(scale_factor: u32) -> Self {
-        let sdl_context = sdl2::init().unwrap();
+    pub fn new(sdl_context: &sdl2::Sdl, scale_factor: u32) -> Self {
         let video_subsystem = sdl_context.video().unwrap();
         let window = video_subsystem.window("CHIP-8 EMU", BASE_WIDTH*scale_factor, BASE_HEIGHT*scale_factor)
             .build()

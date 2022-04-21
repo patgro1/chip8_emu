@@ -26,7 +26,6 @@ pub struct Memory {
     mem: [u8; MEM_SIZE as usize],
     /* NOTE: Even though the PC should be part of the cpu, it is tightly coupled to the mem so I
      decided to put it in the same structure.*/
-    pc: u16,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -37,26 +36,12 @@ pub enum MemError {
 impl Memory {
     pub fn new() -> Memory {
         let mut mem = [0; MEM_SIZE];
-        let pc: u16 = ROM_START.try_into().unwrap();
         // Setting the font from address 0x50in
         for (idx, val) in FONTS.iter().enumerate() {
             mem[idx + FONT_START] = *val;
         }
         Memory {
             mem,
-            pc
-        }
-    }
-
-    pub fn increment_pc(&mut self) {
-        self.pc = self.pc+1;
-        // TODO: Handle wrap around
-
-    }
-
-    pub fn inspect_mem(self, start_addr:usize, end_addr:usize) {
-        for (offset, val) in self.mem[start_addr..end_addr].iter().enumerate() {
-            println!("0x{:X}: 0x{:X}", start_addr+offset, val);
         }
     }
 
@@ -72,69 +57,9 @@ impl Memory {
         return Ok(())
     }
 
-    pub fn fetch_instruction(&mut self) -> u16 {
-        let valh: u16 = self.mem[self.pc as usize].into();
-        self.increment_pc();
-        let vall: u16 = self.mem[self.pc as usize].into();
-        self.increment_pc();
-        valh << 8 | vall
-    }
-
     pub fn fetch_byte(&self, addr: u16) -> u8 {
         // println!("Fetching byte at addr= 0x{:4X}", addr);
         self.mem[addr as usize]
-    }
-
-    pub fn jump(&mut self, addr: u16) {
-        self.pc = addr;
-    }
-}
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_create_memory_with_good_size() {
-        let m: Memory = Memory::new();
-        assert_eq!(m.mem.len(), MEM_SIZE);
-    }
-
-    #[test]
-    fn test_start_ram_empty() {
-        let test_data = vec!(1; MEM_SIZE-ROM_START);
-        let mut m: Memory = Memory::new();
-        let r = m.load_rom(&test_data);
-        assert!(r.is_ok());
-        for idx in 0..INTERPRETER_END {
-            assert_eq!(m.mem[idx], 0, "Ram element {} should be 0 but is {}", idx, m.mem[idx]);
-        }
-    }
-
-    #[test]
-    fn test_load_data_too_big() {
-        /* Make sure that if we load data bigger than the space reserved
-         * for the ROM, we get an error out */
-        let test_data = vec!(1; MEM_SIZE-ROM_START+1);
-        let mut m: Memory = Memory::new();
-        let r = m.load_rom(&test_data);
-        assert!(r.is_err());
-        let got = r.unwrap_err();
-        assert_eq!(got, MemError::OutOfBound);
-    }
-
-    #[test]
-    fn test_load_data_ok() {
-        let test_data = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        let mut m: Memory = Memory::new();
-        let r = m.load_rom(&test_data);
-        assert!(r.is_ok());
-        for idx in 0..test_data.len() {
-            assert_eq!(m.mem[idx+ROM_START], test_data[idx], "Ram element {} should be 0 but is {}", idx, m.mem[idx]);
-        }
-
-
     }
 
 }
