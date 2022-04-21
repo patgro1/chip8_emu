@@ -1,6 +1,5 @@
 const MEM_SIZE: usize = 4096;
-const INTERPRETER_END: usize = 0x1ff;
-const ROM_START: usize = 0x200;
+pub const ROM_START: usize = 0x200;
 const FONT_START: usize = 0x50;
 const FONT_ARR_SIZE: usize = 5*16;
 //const NUMBERS: &'static [i32] = &[1, 2, 3, 4, 5];

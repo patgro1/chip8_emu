@@ -1,11 +1,11 @@
+use crate::traits::{BASE_WIDTH, BASE_HEIGHT, BUFFER_SIZE, ScreenDisplay};
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 
-const BASE_WIDTH: u32 = 64;
-const BASE_HEIGHT: u32 = 32;
-pub const BUFFER_SIZE: usize = BASE_WIDTH as usize * BASE_HEIGHT as usize;
+// const BASE_WIDTH: u32 = 64;
+// const BASE_HEIGHT: u32 = 32;
 const COLOR_BG: Color = Color::RGB(0, 0, 0);
 const COLOR_FG: Color = Color::RGB(255, 255, 255);
 
@@ -38,11 +38,6 @@ impl Screen {
         Self {canvas, scale_factor}
     }
 
-    pub fn reset(&mut self) {
-        self.canvas.set_draw_color(COLOR_BG);
-        self.canvas.clear();
-    }
-
     fn show(&mut self) {
         self.canvas.present();
     }
@@ -58,7 +53,10 @@ impl Screen {
         self.canvas.fill_rect(pixel).unwrap();
     }
 
-    pub fn draw(&mut self, &buffer: &[u8; BUFFER_SIZE]) {
+}
+
+impl ScreenDisplay for Screen {
+    fn draw(&mut self, buffer: [u8; BUFFER_SIZE]) {
         for y in 0..BASE_HEIGHT{
             for x in 0..BASE_WIDTH {
                 let index: usize = y as usize * BASE_WIDTH as usize + x as usize;
