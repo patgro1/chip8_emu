@@ -67,7 +67,9 @@ fn main() {
                 _ => {}
             }
         }
-        cpu.tick(&mut vram);
-        screen.draw(&vram);
+        let updated_vram = cpu.tick(&mut vram);
+        if updated_vram == true {
+            screen.draw(&vram);
+        }
     }
 }

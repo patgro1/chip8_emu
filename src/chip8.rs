@@ -54,15 +54,15 @@ impl Chip8 {
         self.mem.load_rom(data)
     }
 
-    pub fn tick(&mut self, vram: &mut [u8; BUFFER_SIZE]) {
+    pub fn tick(&mut self, vram: &mut [u8; BUFFER_SIZE]) -> bool {
         let instruction: u16 = self.fetch_next_instruction();
+        let mut updated_vram: bool = false;
         self.pc += 2;
-        // println!("instruction: 0x{:4X}", instruction);
         let op_code: OpCode = match OpCode::try_from(instruction >> 12) {
             Ok(op_code) => op_code,
             Err(message) => {
                 println!("{}", message);
-                return;
+                return updated_vram
             }
         };
         let nibbles: [u16; 3] = [(instruction&0x0F00) >> 8,
@@ -72,6 +72,7 @@ impl Chip8 {
         match op_code {
             OpCode::ClearScreen=> {
                 *vram = [0; BUFFER_SIZE];
+                updated_vram = true;
             },
             OpCode::Jump => self.pc = instruction & 0x0FFF,
             OpCode::SetVx => {
@@ -90,10 +91,11 @@ impl Chip8 {
             OpCode::Draw => {
                 println!("TODO: recalculate the buffer");
                 self.calculate_display_buffer(nibbles[0] as u8, nibbles[1] as u8, nibbles[2] as u8, vram);
-                // TODO: make sure we advertise that the buffer changed
+                updated_vram = true;
             }
         }
         thread::sleep(CPU_SLEEP_TIME_BETWEEN_INSTRUCTION);
+        updated_vram
     }
 
     fn fetch_next_instruction(&mut self) -> u16{
