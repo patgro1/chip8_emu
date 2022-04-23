@@ -1,14 +1,17 @@
 use std::{env, fs};
-
-use std::{thread, time};
-use sdl2::{Sdl, EventPump};
+use sdl2::EventPump;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+
+use sdl2::Sdl;
+
+pub const BASE_WIDTH: u32 = 64;
+pub const BASE_HEIGHT: u32 = 32;
+pub const BUFFER_SIZE: usize = BASE_WIDTH as usize * BASE_HEIGHT as usize;
 
 mod chip8;
 mod memory;
 mod screen;
-mod traits;
 
 
 struct Config {
@@ -35,8 +38,9 @@ fn main() {
         Ok(val) => val
     };
     let sdl_context:Sdl = sdl2::init().unwrap();
-    let screen: screen::Screen = screen::Screen::new(&sdl_context, 20);
-    let mut cpu = chip8::Chip8::new(screen);
+    let mut screen: screen::Screen = screen::Screen::new(&sdl_context, 20);
+    let mut vram: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
+    let mut cpu = chip8::Chip8::new();
     match cpu.load_rom(&content) {
         Err(v) => match v {
             memory::MemError::OutOfBound => {
@@ -54,7 +58,6 @@ fn main() {
     cpu.reset();
 
     'main_loop: loop {
-        cpu.tick();
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit {..} |
@@ -64,5 +67,7 @@ fn main() {
                 _ => {}
             }
         }
+        cpu.tick(&mut vram);
+        screen.draw(&vram);
     }
 }

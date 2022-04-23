@@ -1,4 +1,4 @@
-use crate::traits::{BASE_WIDTH, BASE_HEIGHT, BUFFER_SIZE, ScreenDisplay};
+use crate::{BASE_WIDTH, BASE_HEIGHT, BUFFER_SIZE};
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::pixels::Color;
@@ -52,10 +52,7 @@ impl Screen {
         self.canvas.fill_rect(pixel).unwrap();
     }
 
-}
-
-impl ScreenDisplay for Screen {
-    fn draw(&mut self, buffer: [u8; BUFFER_SIZE]) {
+    pub fn draw(&mut self, buffer: &[u8; BUFFER_SIZE]) {
         for y in 0..BASE_HEIGHT{
             for x in 0..BASE_WIDTH {
                 let index: usize = y as usize * BASE_WIDTH as usize + x as usize;
